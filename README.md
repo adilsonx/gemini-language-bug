@@ -8,7 +8,7 @@ This repository demonstrates a language preservation issue with Google's Gemini 
 
 **Problem**: When processing PDF documents with clear language instructions in the prompt, the model sometimes returns summaries in incorrect languages (Italian, Spanish) instead of preserving the original document language.
 
-**Reproduction Rate**: Approximately 50% of tested documents
+**Reproduction Rate**: Approximately 30% of tested documents
 
 ## Expected vs Actual Behavior
 
