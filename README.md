@@ -60,7 +60,7 @@ Your summary should include:
 
 Format your response in markdown with clear sections and bullet points if necessary.
 
-IMPORTANT: Write your response in the same language as the source document (French, English, Spanish, etc.).
+IMPORTANT: Write your response in the same language as the source document.
 
 Here is the document to analyze:
 ```
