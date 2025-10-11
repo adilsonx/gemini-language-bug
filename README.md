@@ -31,15 +31,12 @@ This inconsistency makes the model **impossible to use in production environment
 The `bug-screenshots/` folder contains real examples of this issue:
 
 ![Bug Example 1](bug-screenshots/gemini-bug-1.png)
-_Example showing response in wrong language despite English source document_
 
 ![Bug Example 2](bug-screenshots/gemini-bug-2.png)
-_Example showing mixed languages in the same response_
 
 ### Key Facts
 
 - **Reproduction Rate**: ~20-30% of requests
-- **Affected Documents**: English PDFs
 - **Prompt Instructions**: Explicitly requests "Write your response in the same language as the source document"
 - **Model Behavior**: Ignores language instructions and outputs Italian/Spanish randomly
 - **Similar Issue**: The same problem occurred with a "preview" version of Gemini Flash 2.0 a few months ago
