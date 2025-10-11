@@ -4,11 +4,28 @@ import { useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "react-hot-toast";
 import { FiUpload, FiFile, FiLoader, FiAlertTriangle } from "react-icons/fi";
+import ReactMarkdown from "react-markdown";
+
+const SAMPLE_PDFS = [
+  {
+    name: "Science for Primary Teachers",
+    filename: "documents_fc6de328-7577-468d-a560-47d94768c72b_1758229206370_Science for Primary Teachers 3_CW Semester 1 2025-2026(p1-5).pdf",
+  },
+  {
+    name: "Price Elasticity of Demand",
+    filename: "documents_52c2ae6b-b7fc-4dc4-990b-dc1a0379ed3f_1758871605423_Types Price Elasticity of Demand (PED)(p1).pdf",
+  }
+];
+
+const PROBLEMATIC_MODEL = "gemini-2.5-flash-lite-preview-09-2025";
 
 export default function HomePage() {
   const [file, setFile] = useState<File | null>(null);
   const [summary, setSummary] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedSamplePdf, setSelectedSamplePdf] = useState<string>("");
+  const [isLoadingSample, setIsLoadingSample] = useState(false);
+  const [showUploadSection, setShowUploadSection] = useState(false);
 
   const onDrop = (acceptedFiles: File[]) => {
     const uploadedFile = acceptedFiles[0];
@@ -27,6 +44,28 @@ export default function HomePage() {
     maxSize: 20 * 1024 * 1024, // 20MB limit
   });
 
+  const loadSamplePdf = async (filename: string) => {
+    if (!filename) return;
+
+    setIsLoadingSample(true);
+    try {
+      const response = await fetch(`/api/load-sample?filename=${encodeURIComponent(filename)}`);
+      if (!response.ok) throw new Error("Failed to load sample PDF");
+
+      const blob = await response.blob();
+      const file = new File([blob], filename, { type: "application/pdf" });
+      setFile(file);
+      setSummary("");
+      setSelectedSamplePdf(filename);
+      toast.success("Sample PDF loaded!");
+    } catch (error) {
+      console.error("Error loading sample PDF:", error);
+      toast.error("Error loading sample PDF");
+    } finally {
+      setIsLoadingSample(false);
+    }
+  };
+
   const handleSummarize = async () => {
     if (!file) return;
 
@@ -35,6 +74,7 @@ export default function HomePage() {
     try {
       const formData = new FormData();
       formData.append("pdf", file);
+      formData.append("model", PROBLEMATIC_MODEL);
 
       const response = await fetch("/api/pdf-summarize", {
         method: "POST",
@@ -103,64 +143,105 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Upload Area */}
+        {/* Sample PDFs Selector */}
         <div className="bg-white shadow-xl rounded-lg p-6 mb-8">
           <h3 className="text-xl font-semibold text-gray-900 mb-4">
-            Upload PDF Document
+            Quick Test: Load Sample PDFs
           </h3>
-
-          <div
-            {...getRootProps()}
-            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-              isDragActive
-                ? "border-blue-400 bg-blue-50"
-                : "border-gray-300 hover:border-gray-400"
-            }`}
-          >
-            <input {...getInputProps()} />
-            <FiUpload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            {isDragActive ? (
-              <p className="text-blue-600">Drop the PDF file here...</p>
-            ) : (
-              <div>
-                <p className="text-gray-600 mb-2">
-                  Drag and drop a PDF file here, or click to select
-                </p>
-                <p className="text-sm text-gray-500">Maximum size: 20MB</p>
-              </div>
+          <p className="text-sm text-gray-600 mb-4">
+            Select a sample PDF to quickly test the language bug reproduction
+          </p>
+          <div className="flex gap-4 items-center">
+            <select
+              value={selectedSamplePdf}
+              onChange={(e) => loadSamplePdf(e.target.value)}
+              disabled={isLoadingSample || isProcessing}
+              className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">-- Select a sample PDF --</option>
+              {SAMPLE_PDFS.map((pdf) => (
+                <option key={pdf.filename} value={pdf.filename}>
+                  {pdf.name}
+                </option>
+              ))}
+            </select>
+            {isLoadingSample && (
+              <FiLoader className="animate-spin h-6 w-6 text-blue-500" />
             )}
           </div>
+        </div>
 
-          {file && (
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <FiFile className="h-5 w-5 text-red-500 mr-2" />
-                  <span className="text-sm font-medium text-gray-900">
-                    {file.name}
-                  </span>
-                  <span className="text-sm text-gray-500 ml-2">
-                    ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                  </span>
-                </div>
-                <button
-                  onClick={handleSummarize}
-                  disabled={isProcessing}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                >
-                  {isProcessing ? (
-                    <>
-                      <FiLoader className="animate-spin h-4 w-4 mr-2" />
-                      Processing...
-                    </>
-                  ) : (
-                    "Generate Summary"
-                  )}
-                </button>
+        {/* Upload Area - Collapsible */}
+        <div className="bg-white shadow-xl rounded-lg p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-gray-900">
+              Or Upload Your Own PDF Document
+            </h3>
+            <button
+              onClick={() => setShowUploadSection(!showUploadSection)}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              {showUploadSection ? "Hide" : "Show"}
+            </button>
+          </div>
+
+          {showUploadSection && (
+            <>
+              <div
+                {...getRootProps()}
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                  isDragActive
+                    ? "border-blue-400 bg-blue-50"
+                    : "border-gray-300 hover:border-gray-400"
+                }`}
+              >
+                <input {...getInputProps()} />
+                <FiUpload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                {isDragActive ? (
+                  <p className="text-blue-600">Drop the PDF file here...</p>
+                ) : (
+                  <div>
+                    <p className="text-gray-600 mb-2">
+                      Drag and drop a PDF file here, or click to select
+                    </p>
+                    <p className="text-sm text-gray-500">Maximum size: 20MB</p>
+                  </div>
+                )}
               </div>
-            </div>
+            </>
           )}
         </div>
+
+        {/* File Info & Generate Button */}
+        {file && (
+          <div className="bg-white shadow-xl rounded-lg p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <FiFile className="h-5 w-5 text-red-500 mr-2" />
+                <span className="text-sm font-medium text-gray-900">
+                  {file.name}
+                </span>
+                <span className="text-sm text-gray-500 ml-2">
+                  ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                </span>
+              </div>
+              <button
+                onClick={handleSummarize}
+                disabled={isProcessing}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {isProcessing ? (
+                  <>
+                    <FiLoader className="animate-spin h-4 w-4 mr-2" />
+                    Processing...
+                  </>
+                ) : (
+                  "Generate Summary"
+                )}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Results */}
         {summary && (
@@ -168,8 +249,8 @@ export default function HomePage() {
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
               Generated Summary
             </h2>
-            <div className="prose prose-gray max-w-none text-gray-800 bg-gray-50 p-4 rounded-lg">
-              <pre className="whitespace-pre-wrap font-sans">{summary}</pre>
+            <div className="prose prose-gray max-w-none bg-gray-50 p-6 rounded-lg">
+              <ReactMarkdown>{summary}</ReactMarkdown>
             </div>
 
             {/* Language Analysis */}

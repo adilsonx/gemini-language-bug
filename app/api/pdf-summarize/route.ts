@@ -7,6 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get("pdf") as File;
+    const selectedModel = formData.get("model") as string;
 
     if (!file) {
       return NextResponse.json(
@@ -22,13 +23,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Use selected model or default to the problematic preview model
+    const modelId = selectedModel || "gemini-2.5-flash-lite-preview-09-2025";
+
     // Convert file to base64
     const bytes = await file.arrayBuffer();
     const base64Data = Buffer.from(bytes).toString("base64");
 
-    // Initialize Gemini model - using the problematic model
+    // Initialize Gemini model with the selected model
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash-lite-preview-09-2025",
+      model: modelId,
     });
 
     // This is the EXACT prompt that causes the language bug
@@ -64,7 +68,7 @@ export async function POST(request: NextRequest) {
       summary,
       fileName: file.name,
       fileSize: file.size,
-      model: "gemini-2.5-flash-lite-preview-09-2025",
+      model: modelId,
       promptUsed: prompt,
     });
   } catch (error) {

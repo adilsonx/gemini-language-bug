@@ -3,6 +3,8 @@
 /.pnp
 .pnp.js
 
+.env
+
 # Testing
 /coverage
 
@@ -31,3 +33,8 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# IMPORTANT: Keep sample PDFs in the repo for bug reproduction
+# Do NOT ignore sample-pdfs folder
+!sample-pdfs/
+!sample-pdfs/*.pdf
